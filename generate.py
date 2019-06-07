@@ -23,6 +23,7 @@ parser.add_argument('--nlerp', type=int, default=1, help='number of lerps (for l
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=64, help='the height / width of the input image to network')
+parser.add_argument('--imageFormat', type=str, default="png", help='the image format')
 parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
 parser.add_argument('--ngf', type=int, default=64)
 parser.add_argument('--ndf', type=int, default=64)
@@ -161,7 +162,7 @@ for i in range(opt.niter):
         if not os.path.isdir(image_dir):
             os.mkdir(image_dir)
         vutils.save_image(images[b],
-                              '%s/image_%02d_%03d.png' % (image_dir, b, i),
+                              '%s/image_%02d_%05d.%s' % (image_dir, b, i, opt.imageFormat),
                               normalize=True)
 
     # Add some noise.
