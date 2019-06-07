@@ -134,30 +134,49 @@ class Generator(nn.Module):
     def __init__(self, ngpu):
         super(Generator, self).__init__()
         self.ngpu = ngpu
-        self.main = nn.Sequential(
-            # input is Z, going into a convolution
-            nn.ConvTranspose2d(     nz, ngf * 8, 4, 1, 0, bias=False),
+
+        layers = []
+
+        # input is Z, going into a convolution
+        if (opt.imageSize == 64):
+            layers.extend([
+                nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
+            ])
+        elif (opt.imageSize == 128):
+            layers.extend([
+                nn.ConvTranspose2d(nz, ngf * 16, 4, 1, 0, bias=False),
+                nn.BatchNorm2d(ngf * 16),
+                nn.ReLU(True),
+                nn.ConvTranspose2d(ngf * 16, ngf * 8, 4, 2, 1, bias=False),
+            ])
+        else:
+            print("Unsupported image size: {}" % opt.imageSize)
+
+        layers.extend([
             nn.BatchNorm2d(ngf * 8),
             nn.ReLU(True),
+
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf * 4),
             nn.ReLU(True),
+
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf * 2),
             nn.ReLU(True),
 
             # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d(ngf * 2,     ngf, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf),
             nn.ReLU(True),
 
             # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(    ngf,      nc, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
             nn.Tanh()
             # state size. (nc) x 64 x 64
-        )
+        ])
+        self.main = nn.Sequential(*layers)
 
     def forward(self, input):
         if input.is_cuda and self.ngpu > 1:
@@ -172,7 +191,6 @@ netG.apply(weights_init)
 if opt.netG != '':
     netG.load_state_dict(torch.load(opt.netG))
 print(netG)
-
 
 class Discriminator(nn.Module):
     def __init__(self, ngpu):
@@ -196,7 +214,8 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*8) x 4 x 4
             nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
+            nn.Sigmoid(),
+            nn.MaxPool2d(opt.imageSize)
         )
 
     def forward(self, input):
@@ -208,11 +227,17 @@ class Discriminator(nn.Module):
         return output.view(-1, 1).squeeze(1)
 
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 netD = Discriminator(ngpu).to(device)
 netD.apply(weights_init)
 if opt.netD != '':
     netD.load_state_dict(torch.load(opt.netD))
 print(netD)
+
+print("Generator n. params: {}".format(count_parameters(netG)))
+print("Discriminator n. params: {}".format(count_parameters(netD)))
 
 criterion = nn.BCELoss()
 
@@ -223,6 +248,7 @@ fake_label = 0
 # setup optimizer
 optimizerD = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+
 
 for epoch in range(opt.niter):
     for i, data in enumerate(dataloader, 0):
