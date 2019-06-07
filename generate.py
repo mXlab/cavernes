@@ -18,7 +18,7 @@ parser.add_argument('--netG', required=True, help="path to netG (to generate dat
 parser.add_argument('--dataset', required=True, help='cifar10 | lsun | mnist |imagenet | folder | lfw | fake | gray_folder')
 parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--algo', type=str, default='drunk', help='drunk | linear | lerp')
-parser.add_argument('--variation', type=float, default=0.1, help='variation level')
+parser.add_argument('--variation', type=float, default=0.1, help='variation level (for drunk and linear algorithms)')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=64, help='the height / width of the input image to network')
