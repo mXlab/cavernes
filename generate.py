@@ -154,8 +154,8 @@ for i in range(opt.niter):
     images = fake.detach()
     # Generate big image file.
     vutils.save_image(images,
-                      '%s/images_%03d.png' % (opt.outf, i),
-                      normalize=True)
+                      '%s/images_%05d.png' % (opt.outf, i),
+                      normalize=True,padding=0)
     # Generate all images in sub folders.
     for b in range(opt.batchSize):
         image_dir = '%s/images_%02d' % (opt.outf, b)
