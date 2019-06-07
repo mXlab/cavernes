@@ -19,6 +19,7 @@ parser.add_argument('--dataset', required=True, help='cifar10 | lsun | mnist |im
 parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--algo', type=str, default='drunk', help='drunk | linear | lerp')
 parser.add_argument('--variation', type=float, default=0.1, help='variation level (for drunk and linear algorithms)')
+parser.add_argument('--nlerp', type=int, default=1, help='number of lerps (for lerp algorithm)')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
 parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imageSize', type=int, default=64, help='the height / width of the input image to network')
@@ -145,6 +146,7 @@ import progressbar
 
 bar = progressbar.ProgressBar(maxval=opt.niter, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 bar.start()
+lerpBlock = opt.niter // opt.nlerp
 for i in range(opt.niter):
     bar.update(i+1)
     fake = netG(z)
@@ -168,7 +170,10 @@ for i in range(opt.niter):
     elif opt.algo == 'linear':
         z += noise_add.clone().detach()
     elif opt.algo == 'lerp':
-        t = (i+1) / float(opt.niter)
+        t = ((i+1) % lerpBlock) / float(lerpBlock)
+        if (t == 0):
+            noise_start = noise_end
+            noise_end = torch.randn(opt.batchSize, nz, 1, 1, device=device)
         z = (1-t) * noise_start + t * noise_end
     else:
         print('Unrecognized algorithm: {}' % opt.algo)
