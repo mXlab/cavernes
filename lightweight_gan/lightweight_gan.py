@@ -26,6 +26,7 @@ from kornia import filter2D
 
 from lightweight_gan.diff_augment import DiffAugment
 from lightweight_gan.version import __version__
+from lightweight_gan.dataset import PrehistoryDataset
 
 from tqdm import tqdm
 from einops import rearrange
@@ -211,13 +212,10 @@ def resize_to_minimum_size(min_size, image):
         return torchvision.transforms.functional.resize(image, min_size)
     return image
 
-class ImageDataset(Dataset):
+class ImageDataset(PrehistoryDataset):
     def __init__(self, folder, image_size, transparent = False, aug_prob = 0.):
-        super().__init__()
         self.folder = folder
         self.image_size = image_size
-        self.paths = [p for ext in EXTS for p in Path(f'{folder}').glob(f'**/*.{ext}')]
-        assert len(self.paths) > 0, f'No images were found in {folder} for training'
 
         convert_image_fn = partial(convert_image_to, 'RGBA' if transparent else 'RGB')
         num_channels = 3 if not transparent else 4
@@ -231,13 +229,8 @@ class ImageDataset(Dataset):
             transforms.Lambda(expand_greyscale(transparent))
         ])
 
-    def __len__(self):
-        return len(self.paths)
-
-    def __getitem__(self, index):
-        path = self.paths[index]
-        img = Image.open(path)
-        return self.transform(img)
+        super().__init__(folder, self.transform)
+        self.resize(image_size)
 
 # augmentations
 
@@ -877,8 +870,11 @@ class Trainer():
     def write_config(self):
         self.config_path.write_text(json.dumps(self.config()))
 
-    def load_config(self):
-        config = self.config() if not self.config_path.exists() else json.loads(self.config_path.read_text())
+    def load_config(self, path=None):
+        if path is None:
+            path = self.config_path
+        path = Path(path)
+        config = self.config() if not path.exists() else json.loads(path.read_text())
         self.image_size = config['image_size']
         self.transparent = config['transparent']
         self.syncbatchnorm = config['syncbatchnorm']
@@ -1078,6 +1074,9 @@ class Trainer():
 
         self.steps += 1
 
+    def sample_noise(self, n):
+        return torch.randn((n, self.GAN.latent_dim))
+
     @torch.no_grad()
     def evaluate(self, num = 0, num_image_tiles = 8, trunc = 1.0):
         self.GAN.eval()
@@ -1140,8 +1139,18 @@ class Trainer():
         return fid_score.calculate_fid_given_paths([real_path, fake_path], 256, True, 2048)
 
     @torch.no_grad()
-    def generate_truncated(self, G, style, trunc_psi = 0.75, num_image_tiles = 8):
-        generated_images = evaluate_in_chunks(self.batch_size, G, style)
+    def generate(self, z, batch_size=None, trunc_psi = 0.75):
+        if batch_size is None:
+            batch_size = self.batch_size
+        generated_images = evaluate_in_chunks(batch_size, self.GAN.G, z)
+        return generated_images.clamp_(0., 1.)
+
+
+    @torch.no_grad()
+    def generate_truncated(self, G, style, batch_size=None, trunc_psi = 0.75, num_image_tiles = 8):
+        if batch_size is None:
+            batch_size = self.batch_size
+        generated_images = evaluate_in_chunks(batch_size, G, style)
         return generated_images.clamp_(0., 1.)
 
     @torch.no_grad()
@@ -1194,8 +1203,10 @@ class Trainer():
         log = ' | '.join(map(lambda n: f'{n[0]}: {n[1]:.2f}', data))
         print(log)
 
-    def model_name(self, num):
-        return str(self.models_dir / self.name / f'model_{num}.pt')
+    def model_name(self, num, path=None):
+        if path is None:
+            path = self.models_dir / self.name
+        return str( path / f'model_{num}.pt')
 
     def init_folders(self):
         (self.results_dir / self.name).mkdir(parents=True, exist_ok=True)
@@ -1223,12 +1234,14 @@ class Trainer():
         torch.save(save_data, self.model_name(num))
         self.write_config()
 
-    def load(self, num = -1):
-        self.load_config()
+    def load(self, num = -1, path=None):
+        if path is None:
+            path = self.models_dir / self.name
+        self.load_config(path / ".config.json")
 
         name = num
         if num == -1:
-            file_paths = [p for p in Path(self.models_dir / self.name).glob('model_*.pt')]
+            file_paths = [p for p in Path(path).glob('model_*.pt')]
             saved_nums = sorted(map(lambda x: int(x.stem.split('_')[1]), file_paths))
             if len(saved_nums) == 0:
                 return
@@ -1237,7 +1250,7 @@ class Trainer():
 
         self.steps = name * self.save_every
 
-        load_data = torch.load(self.model_name(name))
+        load_data = torch.load(self.model_name(name, path))
 
         if 'version' in load_data and self.is_main:
             print(f"loading from version {load_data['version']}")
@@ -1253,3 +1266,10 @@ class Trainer():
                 self.G_scaler.load_state_dict(load_data['G_scaler'])
             if 'D_scaler' in load_data:
                 self.D_scaler.load_state_dict(load_data['D_scaler'])
+
+    def eval(self):
+        self.GAN.eval()
+
+    def interpolate(self, model_begin, model_end, ratio):
+        for p, p_begin, p_end in zip(self.GAN.parameters(), model_begin.GAN.parameters(), model_end.GAN.parameters()):
+            p.data = (1-ratio)*p_begin.data + ratio*p_end.data

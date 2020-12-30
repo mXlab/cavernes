@@ -1,27 +1,23 @@
-<img src="./sample-512.jpg" width="600px"></img>
-
-*512x512 flowers after 12 hours of training, 1 gpu*
-
-<img src="./sample-256.jpg" width="400px"></img>
-
-*256x256 flowers after 12 hours of training, 1 gpu*
-
-## 'Lightweight' GAN
-
-[![PyPI version](https://badge.fury.io/py/lightweight-gan.svg)](https://badge.fury.io/py/lightweight-gan)
-
-Implementation of <a href="https://openreview.net/forum?id=1Fqg133qRaI">'lightweight' GAN</a> proposed in ICLR 2021, in Pytorch. The main contributions of the paper is a skip-layer excitation in the generator, paired with autoencoding self-supervised learning in the discriminator. Quoting the one-line summary "converge on single gpu with few hours' training, on 1024 resolution sub-hundred images".
+# Prehistory GAN
 
 ## Install
 
-```bash
-$ pip install lightweight-gan
-```
+To install package run:
+`pip install lightweight-gan`
 
-## Use
+## Generating Videos
 
-One command
+You can generate videos using this command:
+`python video.py --num-videos 10 --duration 10`
 
+**Notes**:
+- Only a limited number of functionality are supported for now.
+- Might only work on GPU for now.
+- There might be some bugs.
+
+## Training
+
+To train a model use the following command
 ```bash
 $ lightweight_gan --data ./path/to/images --image-size 512
 ```
