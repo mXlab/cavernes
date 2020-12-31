@@ -1,4 +1,5 @@
-# Prehistory GAN
+# Cavernes
+New art project involving GANs and cave paintings
 
 ## Install
 
