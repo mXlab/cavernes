@@ -7,7 +7,9 @@ To install package run:
 
 ## Generating Videos
 
-You can generate videos using this command:
+First download the [following folder](https://drive.google.com/drive/folders/1uPc_oyY-WrYNKujeDQPOh4eMEQRjnOkW?usp=sharing) and copy it in the current directory.
+
+You can then generate videos using this command:
 `python video.py --num-videos 10 --duration 10`
 
 **Notes**:
