@@ -30,7 +30,6 @@ from lightweight_gan.dataset import PrehistoryDataset
 
 from tqdm import tqdm
 from einops import rearrange
-from pytorch_fid import fid_score
 
 from adabelief_pytorch import AdaBelief
 from gsa_pytorch import GSA
@@ -799,6 +798,8 @@ class Trainer():
         self.dataset_aug_prob = dataset_aug_prob
 
         self.calculate_fid_every = calculate_fid_every
+        if exists(self.calculate_fid_every):
+            from pytorch_fid import fid_score
 
         self.is_ddp = is_ddp
         self.is_main = rank == 0
