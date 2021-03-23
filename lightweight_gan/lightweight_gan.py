@@ -753,7 +753,7 @@ class Trainer():
         self.base_dir = base_dir
         self.results_dir = base_dir / results_dir
         self.models_dir = base_dir / models_dir
-        self.config_path = self.models_dir / name / '.config.json'
+        self.config_path = self.models_dir / name / 'config.json'
 
         assert is_power_of_two(image_size), 'image size must be a power of 2 (64, 128, 256, 512, 1024)'
         assert all(map(is_power_of_two, attn_res_layers)), 'resolution layers of attention must all be powers of 2 (16, 32, 64, 128, 256, 512)'
@@ -1238,7 +1238,7 @@ class Trainer():
     def load(self, num = -1, path=None):
         if path is None:
             path = self.models_dir / self.name
-        self.load_config(path / ".config.json")
+        self.load_config(path / "config.json")
 
         name = num
         if num == -1:
