@@ -8,6 +8,9 @@ To install package run:
 
 ## Generating Videos
 
+You can generate videos using this [collab notebook](https://colab.research.google.com/drive/176JXysgHqztlB9y5nwdlFN81a1iCmCHA?usp=sharing).
+You first need to add a shortcut to Artifical Prehistory to your google drive.
+
 First download the [following folder](https://drive.google.com/drive/folders/1uPc_oyY-WrYNKujeDQPOh4eMEQRjnOkW?usp=sharing) and copy it in the current directory.
 
 You can then generate videos using this command:
