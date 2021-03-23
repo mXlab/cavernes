@@ -1245,6 +1245,7 @@ class Trainer():
             file_paths = [p for p in Path(path).glob('model_*.pt')]
             saved_nums = sorted(map(lambda x: int(x.stem.split('_')[1]), file_paths))
             if len(saved_nums) == 0:
+                print("No model found @ %s -> Using randomly initialized network."%path)
                 return
             name = saved_nums[-1]
             print(f'continuing from previous epoch - {name}')
