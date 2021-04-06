@@ -79,5 +79,5 @@ with tempfile.TemporaryDirectory() as tmpdirname:
     for j in range(args.num_videos):
         template_filename = os.path.join(tmpdirname, str(j), "\%05d.png")
         output_path = args.output_dir / ("%i.mp4"%j)
-        os.system("ffmpeg -r %i -i %s %s"%(args.fps, template_filename, output_path))
+        os.system("ffmpeg -r %i -i %s -c:v libx264 -pix_fmt yuv420p %s"%(args.fps, template_filename, output_path))
 
